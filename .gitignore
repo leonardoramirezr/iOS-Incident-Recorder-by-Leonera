@@ -1,0 +1,23 @@
+# Proyecto generado por XcodeGen (scripts/generate-project.sh)
+*.xcodeproj/
+
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xcarchive
+*.ipa
+*.dSYM.zip
+*.dSYM/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,363 @@
+name: Build
+
+# Cada push compila, firma Ad Hoc y publica el IPA en GitHub Pages para instalarlo
+# desde Safari en el iPhone.
+on:
+  push:
+    branches: ['**', '!gh-pages']
+  workflow_dispatch:
+
+# Ningún build se cancela: en main se encolan (las versiones 0.x.0 son
+# consecutivas); en las demás ramas cada ejecución tiene su propio grupo.
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: read
+
+env:
+  APP_NAME: Incident Recorder by Leonera
+  APP_BUNDLE_ID: com.leonardoramirezr.incidentrecorderbyleonera
+  PROJECT: IncidentRecorder.xcodeproj
+  SCHEME: IncidentRecorder
+  KEEP_BRANCH_BUILDS: "20"
+
+jobs:
+  build:
+    name: Compilar, firmar y publicar
+    runs-on: macos-15
+    timeout-minutes: 75
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID || vars.GOOGLE_IOS_CLIENT_ID }}
+      ENABLE_FAMILY_CONTROLS: ${{ vars.ENABLE_FAMILY_CONTROLS }}
+      XCODE_VERSION: ${{ vars.XCODE_VERSION }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Seleccionar Xcode
+        run: |
+          if [ -n "$XCODE_VERSION" ]; then
+            if [ -d "/Applications/Xcode_${XCODE_VERSION}.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app"
+            else
+              echo "::warning::Xcode ${XCODE_VERSION} no está instalado en el runner; se usa el predeterminado."
+            fi
+          fi
+          xcodebuild -version
+          if command -v xcbeautify >/dev/null 2>&1; then
+            echo "XCODE_FORMATTER=xcbeautify --renderer github-actions" >> "$GITHUB_ENV"
+          else
+            echo "XCODE_FORMATTER=cat" >> "$GITHUB_ENV"
+          fi
+
+      - name: Comprobar secrets de firma
+        id: signing
+        run: |
+          present=0
+          missing=""
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
+            if [ -n "${!name}" ]; then
+              present=$((present + 1))
+            else
+              missing="$missing $name"
+            fi
+          done
+          if [ "$present" -eq 4 ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Firma Ad Hoc habilitada."
+          elif [ "$present" -eq 0 ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Build sin firmar::No hay secrets de Apple configurados: se generará un IPA sin firmar (no se puede instalar en un iPhone)."
+          else
+            echo "::error title=Secrets incompletos::Faltan los secrets:${missing}. Configura los cuatro (ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 y APPLE_TEAM_ID) como secrets del repositorio, o ninguno para generar un IPA sin firmar."
+            exit 1
+          fi
+
+      - name: Calcular versión y etiqueta
+        id: version
+        run: |
+          git fetch --tags --force --quiet
+          last_minor="$(git tag --list | grep -E '^0\.[0-9]+\.0$' | sed -E 's/^0\.([0-9]+)\.0$/\1/' | sort -n | tail -n 1 || true)"
+          last_minor="${last_minor:-0}"
+          next_minor=$((last_minor + 1))
+          sha7="${GITHUB_SHA:0:7}"
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            tag="0.${next_minor}.0"
+            kind="stable"
+          else
+            tag="build-${GITHUB_RUN_NUMBER}-${sha7}"
+            kind="prerelease"
+          fi
+          {
+            echo "tag=$tag"
+            echo "kind=$kind"
+            echo "version=0.${next_minor}.0"
+            echo "build_number=${GITHUB_RUN_NUMBER}"
+            echo "sha7=$sha7"
+          } >> "$GITHUB_OUTPUT"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "Etiqueta: $tag ($kind) · versión 0.${next_minor}.0 · build ${GITHUB_RUN_NUMBER}"
+
+      - name: Instalar XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generar proyecto (XcodeGen)
+        run: |
+          case "$(printf '%s' "$ENABLE_FAMILY_CONTROLS" | tr '[:upper:]' '[:lower:]')" in
+            true|yes|1) IR_FAMILY_CONTROLS=YES ;;
+            *) IR_FAMILY_CONTROLS=NO ;;
+          esac
+          export IR_FAMILY_CONTROLS
+          echo "Family Controls (Tiempo en pantalla): $IR_FAMILY_CONTROLS"
+          xcodegen generate --spec project.yml
+          if [ -z "$GOOGLE_IOS_CLIENT_ID" ]; then
+            echo "::warning title=Google Drive sin configurar::Falta GOOGLE_IOS_CLIENT_ID (secret o variable). La app grabará pero no podrá subir a Google Drive."
+          fi
+
+      - name: Preparar clave de App Store Connect
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          python3 scripts/asc.py write-key --output "$key_path"
+          echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Validar App Store Connect (clave y dispositivos)
+        if: steps.signing.outputs.enabled == 'true'
+        run: python3 scripts/asc.py check
+
+      - name: Guardar certificados "Apple Development" del llavero
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          python3 scripts/asc.py keychain-serials > "$RUNNER_TEMP/dev-certs-before.txt"
+          echo "Certificados de desarrollo antes del archive: $(wc -l < "$RUNNER_TEMP/dev-certs-before.txt" | tr -d ' ')"
+
+      - name: Archive (firma automática)
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/IncidentRecorder.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            APP_BUNDLE_ID="$APP_BUNDLE_ID" \
+            GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID" \
+            IR_BUILD_TAG="$TAG" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build_number }}" \
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild-archive.log" | $XCODE_FORMATTER
+
+      - name: Exportar IPA Ad Hoc
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          set -o pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>release-testing</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/IncidentRecorder.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild-export.log" | $XCODE_FORMATTER
+          ipa="$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' | head -n 1)"
+          if [ -z "$ipa" ]; then
+            echo "::error::xcodebuild no generó el IPA"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/dist"
+          cp "$ipa" "$RUNNER_TEMP/dist/IncidentRecorder.ipa"
+          echo "IPA_PATH=$RUNNER_TEMP/dist/IncidentRecorder.ipa" >> "$GITHUB_ENV"
+
+      - name: Verificar perfiles Ad Hoc
+        id: verify
+        if: steps.signing.outputs.enabled == 'true'
+        run: scripts/verify-adhoc.sh "$IPA_PATH"
+
+      - name: Compilar IPA sin firmar
+        if: steps.signing.outputs.enabled != 'true'
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            APP_BUNDLE_ID="$APP_BUNDLE_ID" \
+            GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID" \
+            IR_BUILD_TAG="$TAG" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build_number }}" \
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild-build.log" | $XCODE_FORMATTER
+          app="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/IncidentRecorder.app"
+          mkdir -p "$RUNNER_TEMP/unsigned/Payload" "$RUNNER_TEMP/dist"
+          cp -R "$app" "$RUNNER_TEMP/unsigned/Payload/"
+          (cd "$RUNNER_TEMP/unsigned" && zip -qry "$RUNNER_TEMP/dist/IncidentRecorder-unsigned.ipa" Payload)
+          echo "IPA_PATH=$RUNNER_TEMP/dist/IncidentRecorder-unsigned.ipa" >> "$GITHUB_ENV"
+
+      - name: Iconos para el manifest (57 y 512 px)
+        run: |
+          icon="IncidentRecorder/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+          mkdir -p "$RUNNER_TEMP/dist"
+          sips -z 57 57 "$icon" --out "$RUNNER_TEMP/dist/icon-57.png" >/dev/null
+          sips -z 512 512 "$icon" --out "$RUNNER_TEMP/dist/icon-512.png" >/dev/null
+
+      - name: URL de GitHub Pages
+        id: pages
+        run: |
+          base="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url' 2>/dev/null || true)"
+          if [ -z "$base" ]; then
+            owner="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+            base="https://${owner}.github.io/${GITHUB_REPOSITORY#*/}/"
+          fi
+          case "$base" in
+            */) ;;
+            *) base="$base/" ;;
+          esac
+          echo "base_url=$base" >> "$GITHUB_OUTPUT"
+          echo "install_page=${base}${TAG}/" >> "$GITHUB_OUTPUT"
+          echo "GitHub Pages: $base"
+
+      - name: Publicar en GitHub Pages
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          KIND: ${{ steps.version.outputs.kind }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ICON_57: ${{ runner.temp }}/dist/icon-57.png
+          ICON_512: ${{ runner.temp }}/dist/icon-512.png
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+          BUNDLE_ID: ${{ env.APP_BUNDLE_ID }}
+          DEVICE_COUNT: ${{ steps.verify.outputs.devices }}
+        run: scripts/publish-pages.sh
+
+      - name: Crear release
+        env:
+          KIND: ${{ steps.version.outputs.kind }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+          SIGNED: ${{ steps.signing.outputs.enabled }}
+          INSTALL_PAGE: ${{ steps.pages.outputs.install_page }}
+          DEVICE_COUNT: ${{ steps.verify.outputs.devices }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$SIGNED" = "true" ]; then
+            asset="$RUNNER_TEMP/dist/IncidentRecorder-${TAG}.ipa"
+          else
+            asset="$RUNNER_TEMP/dist/IncidentRecorder-${TAG}-unsigned.ipa"
+          fi
+          cp "$IPA_PATH" "$asset"
+          notes="$RUNNER_TEMP/release-notes.md"
+          {
+            if [ "$SIGNED" = "true" ]; then
+              echo "📲 **Instalar en el iPhone:** [${INSTALL_PAGE}](${INSTALL_PAGE}) (ábrelo en Safari)."
+            else
+              echo "⚠️ Build **sin firmar**: faltan los secrets de Apple, así que no se puede instalar en un iPhone."
+            fi
+            echo ""
+            echo "- Versión: \`${VERSION}\` (build ${BUILD_NUMBER})"
+            echo "- Rama: \`${GITHUB_REF_NAME}\` · commit ${GITHUB_SHA:0:7}"
+            if [ -n "$DEVICE_COUNT" ]; then
+              echo "- Perfil Ad Hoc con ${DEVICE_COUNT} dispositivo(s) registrado(s)"
+            fi
+            echo "- Ejecución: ${RUN_URL}"
+          } > "$notes"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$asset" --clobber
+            gh release edit "$TAG" --notes-file "$notes"
+          elif [ "$KIND" = "stable" ]; then
+            gh release create "$TAG" "$asset" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$notes" --latest
+          else
+            gh release create "$TAG" "$asset" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$notes" --prerelease --latest=false
+          fi
+
+      - name: Resumen
+        if: always()
+        env:
+          SIGNED: ${{ steps.signing.outputs.enabled }}
+          INSTALL_PAGE: ${{ steps.pages.outputs.install_page }}
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+          DEVICE_COUNT: ${{ steps.verify.outputs.devices }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## ${APP_NAME} · \`${TAG:-sin etiqueta}\`"
+            echo ""
+            if [ "$JOB_STATUS" != "success" ]; then
+              echo "❌ El build falló; revisa los pasos marcados en rojo."
+            elif [ "$SIGNED" = "true" ]; then
+              echo "📲 **Instalar en el iPhone:** [${INSTALL_PAGE}](${INSTALL_PAGE}) (abrir en Safari)"
+              echo ""
+              echo "- Todos los builds: ${BASE_URL}"
+              if [ -n "$DEVICE_COUNT" ]; then
+                echo "- Perfil Ad Hoc con ${DEVICE_COUNT} dispositivo(s)"
+              fi
+            else
+              echo "⚠️ IPA sin firmar (faltan los secrets de Apple). Descárgalo en los artefactos o en la release."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir IPA como artefacto
+        if: always() && env.IPA_PATH != ''
+        uses: actions/upload-artifact@v5
+        with:
+          name: ipa-${{ steps.version.outputs.tag }}
+          path: ${{ env.IPA_PATH }}
+          if-no-files-found: ignore
+
+      - name: Subir logs de xcodebuild
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: xcodebuild-logs-${{ github.run_number }}
+          path: ${{ runner.temp }}/xcodebuild-*.log
+          if-no-files-found: ignore
+
+      - name: Revocar certificados de desarrollo temporales
+        if: always() && steps.signing.outputs.enabled == 'true'
+        run: python3 scripts/asc.py revoke-new-dev-certs --before "$RUNNER_TEMP/dev-certs-before.txt"

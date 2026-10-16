@@ -1,0 +1,63 @@
+# XcodeGen spec. Genera el proyecto con:  scripts/generate-project.sh
+# (equivale a `IR_FAMILY_CONTROLS=NO xcodegen generate`).
+#
+# Los identificadores se controlan con build settings para que el workflow los
+# pueda pasar a xcodebuild:
+#   APP_BUNDLE_ID          -> bundle de la app; las extensiones usan <bundle>.<sufijo>
+#   GOOGLE_IOS_CLIENT_ID   -> client ID OAuth (tipo iOS) de Google Cloud
+#   IR_BUILD_TAG           -> etiqueta del build (se muestra en Ajustes)
+#   MARKETING_VERSION / CURRENT_PROJECT_VERSION
+name: IncidentRecorder
+
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: es
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+# La capacidad Family Controls (Tiempo en pantalla) solo se añade cuando
+# IR_FAMILY_CONTROLS=YES: para Ad Hoc Apple debe aprobar antes la variante
+# "Distribution" de la capacidad y Xcode no puede registrarla solo con la API.
+include:
+  - path: project-familycontrols.yml
+    enable: ${IR_FAMILY_CONTROLS}
+
+settings:
+  base:
+    APP_BUNDLE_ID: com.leonardoramirezr.incidentrecorderbyleonera
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GOOGLE_IOS_CLIENT_ID: ""
+    IR_BUILD_TAG: local
+    IR_FAMILY_CONTROLS: "NO"
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    SUPPORTS_MACCATALYST: NO
+    SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: NO
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+
+targets:
+  IncidentRecorder:
+    type: application
+    platform: iOS
+    sources:
+      - path: IncidentRecorder
+    settings:
+      base:
+        PRODUCT_NAME: IncidentRecorder
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        INFOPLIST_FILE: Config/IncidentRecorder-Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    scheme: {}
