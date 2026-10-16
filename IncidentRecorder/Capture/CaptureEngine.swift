@@ -313,6 +313,15 @@ final class CaptureEngine: NSObject {
         }
     }
 
+    /// Apaga la vista previa mientras la pantalla está en negro (ahorra batería y calor).
+    func setPreviewEnabled(_ enabled: Bool) {
+        sessionQueue.async {
+            for connection in self.session.connections where connection.videoPreviewLayer != nil {
+                connection.isEnabled = enabled
+            }
+        }
+    }
+
     // MARK: - Grabación
 
     func updateOverlay(_ configuration: OverlayConfiguration) {
@@ -392,8 +401,8 @@ final class CaptureEngine: NSObject {
             if useHEVC == nil {
                 useHEVC = backVideoOutput.availableVideoCodecTypesForAssetWriter(writingTo: .mov).contains(.hevc)
             }
-            let audioSettings = hasAudio
-                ? audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mov) as? [String: Any]
+            let audioSettings: [String: Any]? = hasAudio
+                ? audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mov)
                 : nil
             writer = try SegmentWriter(
                 url: url,

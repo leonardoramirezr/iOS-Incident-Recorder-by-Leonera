@@ -6,6 +6,11 @@ on:
   push:
     branches: ['**', '!gh-pages']
   workflow_dispatch:
+    inputs:
+      family_controls:
+        description: Incluir Tiempo en pantalla (Family Controls) en este build
+        type: boolean
+        default: false
 
 # Ningún build se cancela: en main se encolan (las versiones 0.x.0 son
 # consecutivas); en las demás ramas cada ejecución tiene su propio grupo.
@@ -16,6 +21,10 @@ concurrency:
 permissions:
   contents: write
   pages: read
+
+defaults:
+  run:
+    shell: bash
 
 env:
   APP_NAME: Incident Recorder by Leonera
@@ -35,7 +44,7 @@ jobs:
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID || vars.GOOGLE_IOS_CLIENT_ID }}
-      ENABLE_FAMILY_CONTROLS: ${{ vars.ENABLE_FAMILY_CONTROLS }}
+      ENABLE_FAMILY_CONTROLS: ${{ inputs.family_controls && 'true' || vars.ENABLE_FAMILY_CONTROLS }}
       XCODE_VERSION: ${{ vars.XCODE_VERSION }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -77,7 +86,7 @@ jobs:
             echo "Firma Ad Hoc habilitada."
           elif [ "$present" -eq 0 ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Build sin firmar::No hay secrets de Apple configurados: se generará un IPA sin firmar (no se puede instalar en un iPhone)."
+            echo "::warning title=Build sin firmar::El workflow no recibió ninguno de los secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 y APPLE_TEAM_ID (deben ser secrets del repositorio en Settings › Secrets and variables › Actions). Se genera un IPA sin firmar que no se puede instalar en un iPhone."
           else
             echo "::error title=Secrets incompletos::Faltan los secrets:${missing}. Configura los cuatro (ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 y APPLE_TEAM_ID) como secrets del repositorio, o ninguno para generar un IPA sin firmar."
             exit 1
@@ -197,7 +206,13 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             2>&1 | tee "$RUNNER_TEMP/xcodebuild-export.log" | $XCODE_FORMATTER
-          ipa="$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' | head -n 1)"
+          ipa=""
+          for candidate in "$RUNNER_TEMP"/export/*.ipa; do
+            if [ -f "$candidate" ]; then
+              ipa="$candidate"
+              break
+            fi
+          done
           if [ -z "$ipa" ]; then
             echo "::error::xcodebuild no generó el IPA"
             exit 1
@@ -246,7 +261,15 @@ jobs:
       - name: URL de GitHub Pages
         id: pages
         run: |
-          base="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url' 2>/dev/null || true)"
+          base=""
+          # Si Pages aún no está activado la API responde 404 (y escribe el error en stdout).
+          if pages_url="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url' 2>/dev/null)"; then
+            base="$pages_url"
+          fi
+          case "$base" in
+            https://*) ;;
+            *) base="" ;;
+          esac
           if [ -z "$base" ]; then
             owner="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
             base="https://${owner}.github.io/${GITHUB_REPOSITORY#*/}/"
@@ -344,7 +367,7 @@ jobs:
 
       - name: Subir IPA como artefacto
         if: always() && env.IPA_PATH != ''
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ipa-${{ steps.version.outputs.tag }}
           path: ${{ env.IPA_PATH }}
@@ -352,7 +375,7 @@ jobs:
 
       - name: Subir logs de xcodebuild
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: xcodebuild-logs-${{ github.run_number }}
           path: ${{ runner.temp }}/xcodebuild-*.log

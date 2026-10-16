@@ -73,6 +73,10 @@ final class AppModel {
             // Por si la app se cerró con las demás apps bloqueadas.
             screenTime.removeShield()
         }
+        let auth = self.auth
+        Task { @MainActor in
+            await auth.refreshStatus()
+        }
     }
 
     // MARK: - Estado derivado
@@ -273,6 +277,9 @@ final class AppModel {
     private func handleSessionState(_ state: CaptureEngine.SessionState, hasFront: Bool) {
         sessionState = state
         hasFrontCamera = hasFront
+        if state == .running {
+            capture.setPreviewEnabled(!isLocked)
+        }
         if state == .running, resumeRecordingWhenReady {
             resumeRecordingWhenReady = false
             startRecording()
@@ -293,6 +300,7 @@ final class AppModel {
         showGestureTutorial = showTutorial
         unlockSequence.reset()
         screenTime.applyShield()
+        capture.setPreviewEnabled(false)
         dimScreen()
         persistState()
     }
@@ -319,6 +327,7 @@ final class AppModel {
         showGestureTutorial = false
         unlockSequence.reset()
         screenTime.removeShield()
+        capture.setPreviewEnabled(true)
         restoreBrightness()
         persistState()
     }
