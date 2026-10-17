@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF5E57"/><stop offset="1" stop-color="#C4120A"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F2F2F7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- recorrido -->
+  <path d="M190 860 C 330 800 300 700 420 690" fill="none" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="26" stroke-linecap="round" stroke-dasharray="2 52"/>
+  <ellipse cx="512" cy="842" rx="120" ry="30" fill="#7A0905" opacity="0.35"/>
+  <!-- pin -->
+  <path d="M512 840 C 420 720 262 580 262 420 C 262 282 374 170 512 170 C 650 170 762 282 762 420 C 762 580 604 720 512 840 Z" fill="url(#pin)"/>
+  <!-- botón de grabar dentro del pin -->
+  <circle cx="512" cy="420" r="150" fill="none" stroke="#E5261B" stroke-width="22"/>
+  <circle cx="512" cy="420" r="108" fill="#E5261B"/>
+</svg>
