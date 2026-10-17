@@ -1,0 +1,28 @@
+# Se incluye desde project.yml solo cuando IR_FAMILY_CONTROLS=YES.
+# Añade la capacidad Family Controls a la app y la extensión que pinta de negro
+# la pantalla de bloqueo ("shield") de las demás apps durante una grabación.
+targets:
+  IncidentRecorder:
+    dependencies:
+      - target: ShieldConfiguration
+        embed: true
+        codeSign: true
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Config/IncidentRecorder.entitlements
+        IR_FAMILY_CONTROLS: "YES"
+
+  ShieldConfiguration:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShieldConfiguration
+    settings:
+      base:
+        PRODUCT_NAME: ShieldConfiguration
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).ShieldConfiguration
+        INFOPLIST_FILE: Config/ShieldConfiguration-Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Config/ShieldConfiguration.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
