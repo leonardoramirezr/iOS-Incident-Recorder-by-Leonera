@@ -1,0 +1,17 @@
+{
+  "tag": "0.2.0",
+  "kind": "stable",
+  "version": "0.2.0",
+  "build_number": "10",
+  "branch": "main",
+  "commit": "2a43153d412bc71be2de6f1253205e7940ac4e58",
+  "run_number": 10,
+  "run_url": "https://github.com/leonardoramirezr/iOS-Incident-Recorder-by-Leonera/actions/runs/39090272427",
+  "devices": 1,
+  "bundle_id": "com.leonardoramirezr.incidentrecorderbyleonera",
+  "published_at": "2026-10-18T02:31:14+00:00",
+  "ipa": "IncidentRecorder.ipa",
+  "page_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/0.2.0/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/0.2.0/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-Incident-Recorder-by-Leonera%2F0.2.0%2Fmanifest.plist"
+}

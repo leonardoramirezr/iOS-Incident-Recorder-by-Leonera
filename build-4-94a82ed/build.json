@@ -1,0 +1,17 @@
+{
+  "tag": "build-4-94a82ed",
+  "kind": "prerelease",
+  "version": "0.1.0",
+  "build_number": "4",
+  "branch": "claude/beautiful-pasteur-5libll",
+  "commit": "94a82ed4182316c561dba35568d9d653b35b9992",
+  "run_number": 4,
+  "run_url": "https://github.com/leonardoramirezr/iOS-Incident-Recorder-by-Leonera/actions/runs/38984496698",
+  "devices": 1,
+  "bundle_id": "com.leonardoramirezr.incidentrecorderbyleonera",
+  "published_at": "2026-10-17T00:04:05+00:00",
+  "ipa": "IncidentRecorder.ipa",
+  "page_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-4-94a82ed/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-4-94a82ed/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-Incident-Recorder-by-Leonera%2Fbuild-4-94a82ed%2Fmanifest.plist"
+}
