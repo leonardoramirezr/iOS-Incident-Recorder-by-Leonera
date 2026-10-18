@@ -23,7 +23,7 @@ let out;
   const tape = (rot) => `<g transform="rotate(${rot} 512 560)" filter="url(#softShadow)">
     <rect x="-200" y="505" width="1424" height="110" fill="url(#tapeFill)"/>
     <rect x="-200" y="505" width="1424" height="12" fill="#1C1C1E"/><rect x="-200" y="603" width="1424" height="12" fill="#1C1C1E"/>
-    ${[-760, -375, 375, 760].map(dx => `<text x="${512 + dx}" y="574" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="900" font-size="44" letter-spacing="3" fill="#1C1C1E">INCIDENTE</text>`).join('')}
+    ${[-760, -375, 375, 760].map(dx => `<text x="${512 + dx}" y="574" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="900" font-size="44" letter-spacing="3" fill="#1C1C1E">INCIDENT</text>`).join('')}
     ${[-568, 568].map(dx => `<text x="${512 + dx}" y="572" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="34" fill="#1C1C1E">▲</text>`).join('')}
     <rect x="-200" y="505" width="1424" height="45" fill="#fff" opacity="0.18"/>
   </g>`;
