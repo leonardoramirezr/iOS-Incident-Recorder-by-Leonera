@@ -33,7 +33,7 @@ final class AppModel {
     private(set) var phase: RecorderPhase = .idle
     /// Pantalla negra activa (solo se quita con el gesto de las 4 esquinas).
     private(set) var isLocked = false
-    var showGestureTutorial = false
+    private(set) var showGestureTutorial = false
     private(set) var activeIncidentID: UUID?
     private(set) var cameraAccess: CameraAccess = .notDetermined
     private(set) var microphoneAuthorized = false
@@ -301,8 +301,21 @@ final class AppModel {
         unlockSequence.reset()
         screenTime.applyShield()
         capture.setPreviewEnabled(false)
-        dimScreen()
+        // Con el tutorial visible se mantiene el brillo para poder leer las instrucciones.
+        // Se atenúa al pulsar "Entendido" (ver `dismissGestureTutorial`).
+        if !showTutorial {
+            dimScreen()
+        }
         persistState()
+    }
+
+    /// El usuario pulsó "Entendido": se oculta el tutorial y la pantalla pasa a negro.
+    func dismissGestureTutorial() {
+        guard showGestureTutorial else { return }
+        showGestureTutorial = false
+        if isLocked {
+            dimScreen()
+        }
     }
 
     /// Vuelve a poner la pantalla negra sin pausar la grabación.
@@ -313,9 +326,6 @@ final class AppModel {
 
     func registerUnlockTap(at point: CGPoint, in size: CGSize) {
         guard isLocked else { return }
-        if showGestureTutorial {
-            showGestureTutorial = false
-        }
         if unlockSequence.register(ScreenCorner.corner(at: point, in: size)) {
             unlock()
             UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -370,7 +380,10 @@ final class AppModel {
         refreshPermissions()
         startCameraIfPossible()
         if isLocked {
-            dimScreen()
+            // Mientras el tutorial está visible no se atenúa la pantalla.
+            if !showGestureTutorial {
+                dimScreen()
+            }
             screenTime.applyShield()
         }
         configureLocation()

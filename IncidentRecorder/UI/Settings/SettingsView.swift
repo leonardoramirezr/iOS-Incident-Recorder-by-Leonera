@@ -96,7 +96,7 @@ struct SettingsView: View {
                 }
             }
             .fullScreenCover(isPresented: $showTutorial) {
-                GestureTutorialView(autoDismiss: false) { showTutorial = false }
+                GestureTutorialView { showTutorial = false }
             }
         }
     }

@@ -19,7 +19,7 @@ struct LockScreenView: View {
         .overlay {
             if model.showGestureTutorial {
                 GestureTutorialView {
-                    model.showGestureTutorial = false
+                    model.dismissGestureTutorial()
                 }
                 .transition(.opacity)
             }
