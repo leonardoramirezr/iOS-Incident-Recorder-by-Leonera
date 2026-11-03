@@ -4,7 +4,6 @@ import SwiftUI
 /// abajo a la izquierda y en sentido horario. Se muestra cada vez que empieza
 /// una grabación.
 struct GestureTutorialView: View {
-    var autoDismiss = true
     var onDismiss: () -> Void
 
     @State private var startDate = Date()
@@ -47,13 +46,6 @@ struct GestureTutorialView: View {
                     .frame(maxWidth: 220)
             }
             .padding()
-        }
-        .task {
-            guard autoDismiss else { return }
-            try? await Task.sleep(nanoseconds: UInt64(PhoneGestureDiagram.cycle * 2 * 1_000_000_000))
-            if !Task.isCancelled {
-                onDismiss()
-            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Para desbloquear toca las esquinas: abajo a la izquierda, arriba a la izquierda, arriba a la derecha y abajo a la derecha.")
