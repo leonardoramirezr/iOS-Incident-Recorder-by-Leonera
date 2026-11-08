@@ -13,6 +13,9 @@ struct IncidentRecorderApp: App {
                 .onChange(of: scenePhase) { _, newPhase in
                     model.scenePhaseChanged(newPhase)
                 }
+                .onOpenURL { url in
+                    model.handleOpenURL(url)
+                }
         }
     }
 }

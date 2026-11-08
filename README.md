@@ -40,6 +40,12 @@ internet.
    reanudar o finalizar la incidencia. Desde *Incidencias* puedes volver a verlas,
    exportarlas y ver el estado de subida de cada bloque.
 
+6. **Widget «IR» en la pantalla de bloqueo.** Mantén pulsada la pantalla de bloqueo, pulsa
+   *Personalizar* y agrega el widget **Grabar incidencia** (círculo con «IR»). Al tocarlo abre
+   la app y muestra la animación del gesto de desbloqueo; al pulsar **Entendido** empieza la
+   grabación (la pantalla queda negra). La X de esa pantalla cancela sin grabar. Requiere la app
+   ya configurada y el permiso de cámara concedido; si hay una grabación en curso, no hace nada.
+
 En Google Drive se crea `Incident Recorder by Leonera/Incidente <fecha>/` con
 `bloque-0001_<fecha>.mov`, `bloque-0002_…` y `ubicaciones.csv` (recorrido del incidente).
 
@@ -201,6 +207,7 @@ IncidentRecorder/
   Drive/        OAuth de Google, API de Drive, cola de subidas reanudables y sesión en segundo plano
   ScreenTime/   Permiso de Tiempo en pantalla y bloqueo de apps
   UI/           Onboarding, cámara, pantalla negra y gesto, incidencias, ajustes
+LockWidget/                                Widget «IR» de la pantalla de bloqueo (abre la app con incidentrecorder://ir)
 ShieldConfiguration/                       Extensión que pinta de negro las apps bloqueadas
 scripts/                                   asc.py, publish-pages.sh, verify-adhoc.sh, …
 ```

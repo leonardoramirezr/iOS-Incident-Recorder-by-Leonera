@@ -18,9 +18,9 @@ struct LockScreenView: View {
         .ignoresSafeArea()
         .overlay {
             if model.showGestureTutorial {
-                GestureTutorialView {
+                GestureTutorialView(onDismiss: {
                     model.dismissGestureTutorial()
-                }
+                })
                 .transition(.opacity)
             }
         }

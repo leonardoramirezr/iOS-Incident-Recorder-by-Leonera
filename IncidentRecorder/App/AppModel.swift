@@ -34,6 +34,8 @@ final class AppModel {
     /// Pantalla negra activa (solo se quita con el gesto de las 4 esquinas).
     private(set) var isLocked = false
     private(set) var showGestureTutorial = false
+    /// Tutorial previo a grabar, abierto desde el widget de la pantalla de bloqueo.
+    private(set) var showStartTutorial = false
     private(set) var activeIncidentID: UUID?
     private(set) var cameraAccess: CameraAccess = .notDetermined
     private(set) var microphoneAuthorized = false
@@ -178,7 +180,31 @@ final class AppModel {
 
     // MARK: - Grabación
 
-    func startRecording() {
+    /// Abre la app desde el widget de la pantalla de bloqueo (`incidentrecorder://ir`).
+    /// Muestra la animación del gesto; la grabación empieza al pulsar "Entendido".
+    func handleOpenURL(_ url: URL) {
+        guard url.scheme == "incidentrecorder", url.host == "ir" else { return }
+        guard hasCompletedOnboarding, phase != .recording else { return }
+        guard cameraAccess == .authorized else {
+            alertMessage = "Permite el acceso a la cámara en Ajustes para grabar."
+            return
+        }
+        showStartTutorial = true
+    }
+
+    /// "Entendido" en el tutorial previo: empieza la grabación. El gesto ya se mostró,
+    /// así que no se vuelve a mostrar el tutorial sobre la pantalla negra.
+    func confirmStartFromWidget() {
+        guard showStartTutorial else { return }
+        showStartTutorial = false
+        startRecording(showTutorial: false)
+    }
+
+    func cancelStartFromWidget() {
+        showStartTutorial = false
+    }
+
+    func startRecording(showTutorial: Bool = true) {
         guard phase != .recording else { return }
         guard cameraAccess == .authorized else {
             alertMessage = "Permite el acceso a la cámara en Ajustes para grabar."
@@ -201,7 +227,7 @@ final class AppModel {
         phase = .recording
         lastRecordingError = nil
         UIApplication.shared.isIdleTimerDisabled = true
-        lock(showTutorial: true)
+        lock(showTutorial: showTutorial)
         configureLocation()
         location.requestFreshSample()
         persistState()
