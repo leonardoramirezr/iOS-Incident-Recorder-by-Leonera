@@ -4,6 +4,10 @@ import SwiftUI
 /// abajo a la izquierda y en sentido horario. Se muestra cada vez que empieza
 /// una grabación.
 struct GestureTutorialView: View {
+    var headline = "Grabando"
+    var intro = "La pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:"
+    /// Si se pasa, se muestra una X para cerrar sin grabar (tutorial previo desde el widget).
+    var onCancel: (() -> Void)?
     var onDismiss: () -> Void
 
     @State private var startDate = Date()
@@ -12,11 +16,11 @@ struct GestureTutorialView: View {
         ZStack {
             Color.black.opacity(0.94).ignoresSafeArea()
             VStack(spacing: 22) {
-                Label("Grabando", systemImage: "record.circle")
+                Label(headline, systemImage: "record.circle")
                     .font(.headline)
                     .foregroundStyle(.red)
 
-                Text("La pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:")
+                Text(intro)
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white)
@@ -46,6 +50,20 @@ struct GestureTutorialView: View {
                     .frame(maxWidth: 220)
             }
             .padding()
+        }
+        .overlay(alignment: .topTrailing) {
+            if let onCancel {
+                Button(action: onCancel) {
+                    Image(systemName: "xmark")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Cancelar")
+                .padding(.top, 8)
+                .padding(.trailing, 8)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Para desbloquear toca las esquinas: abajo a la izquierda, arriba a la izquierda, arriba a la derecha y abajo a la derecha.")

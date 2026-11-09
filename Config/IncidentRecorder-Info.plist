@@ -50,6 +50,17 @@
 		<string>location</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).lockwidget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>incidentrecorder</string>
+			</array>
+		</dict>
+	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).uploads</string>

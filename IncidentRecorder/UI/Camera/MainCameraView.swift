@@ -31,8 +31,20 @@ struct MainCameraView: View {
                     .transition(.opacity)
                     .zIndex(10)
             }
+
+            if model.showStartTutorial {
+                GestureTutorialView(
+                    headline: "Iniciar grabación",
+                    intro: "Al tocar Entendido empieza la grabación y la pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:",
+                    onCancel: { model.cancelStartFromWidget() },
+                    onDismiss: { model.confirmStartFromWidget() }
+                )
+                .transition(.opacity)
+                .zIndex(9)
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: model.isLocked)
+        .animation(.easeInOut(duration: 0.3), value: model.showStartTutorial)
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environment(model)
