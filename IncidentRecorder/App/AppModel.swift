@@ -33,6 +33,8 @@ final class AppModel {
     private(set) var phase: RecorderPhase = .idle
     /// Pantalla negra activa (solo se quita con el gesto de las 4 esquinas).
     private(set) var isLocked = false
+    /// Animación del gesto de desbloqueo. Si se muestra sin estar grabando (se abrió la
+    /// app con el widget «IR»), la grabación empieza al pulsar "Entendido".
     private(set) var showGestureTutorial = false
     private(set) var activeIncidentID: UUID?
     private(set) var cameraAccess: CameraAccess = .notDetermined
@@ -178,7 +180,7 @@ final class AppModel {
 
     // MARK: - Grabación
 
-    func startRecording() {
+    func startRecording(showTutorial: Bool = true) {
         guard phase != .recording else { return }
         guard cameraAccess == .authorized else {
             alertMessage = "Permite el acceso a la cámara en Ajustes para grabar."
@@ -201,7 +203,7 @@ final class AppModel {
         phase = .recording
         lastRecordingError = nil
         UIApplication.shared.isIdleTimerDisabled = true
-        lock(showTutorial: true)
+        lock(showTutorial: showTutorial)
         configureLocation()
         location.requestFreshSample()
         persistState()
@@ -303,18 +305,25 @@ final class AppModel {
         capture.setPreviewEnabled(false)
         // Con el tutorial visible se mantiene el brillo para poder leer las instrucciones.
         // Se atenúa al pulsar "Entendido" (ver `dismissGestureTutorial`).
-        if !showTutorial {
+        if showTutorial {
+            restoreBrightness()
+        } else {
             dimScreen()
         }
         persistState()
     }
 
     /// El usuario pulsó "Entendido": se oculta el tutorial y la pantalla pasa a negro.
+    /// Si aún no se grababa (se abrió con el widget «IR»), empieza la grabación.
     func dismissGestureTutorial() {
         guard showGestureTutorial else { return }
         showGestureTutorial = false
-        if isLocked {
-            dimScreen()
+        if phase == .recording {
+            if isLocked {
+                dimScreen()
+            }
+        } else {
+            startRecording(showTutorial: false)
         }
     }
 
@@ -360,6 +369,33 @@ final class AppModel {
         guard let savedBrightness else { return }
         currentScreen()?.brightness = savedBrightness
         self.savedBrightness = nil
+    }
+
+    // MARK: - Widget «IR»
+
+    func handleOpenURL(_ url: URL) {
+        guard QuickRecordLink.matches(url) else { return }
+        showTutorialFromWidget()
+    }
+
+    /// Se tocó el widget «IR» de la pantalla de bloqueo, con la app en segundo plano o
+    /// cerrada: se muestra la animación del gesto. Si ya se graba, aparece sobre la
+    /// pantalla negra; si no, la grabación empieza al pulsar "Entendido".
+    private func showTutorialFromWidget() {
+        guard hasCompletedOnboarding else { return }
+        if phase == .recording {
+            lock(showTutorial: true)
+            return
+        }
+        refreshPermissions()
+        guard cameraAccess == .authorized else {
+            alertMessage = "Permite el acceso a la cámara en Ajustes para grabar."
+            return
+        }
+        // Si la app se cerró a mitad de una grabación, se retoma al pulsar "Entendido".
+        resumeRecordingWhenReady = false
+        showGestureTutorial = true
+        restoreBrightness()
     }
 
     // MARK: - Ciclo de vida

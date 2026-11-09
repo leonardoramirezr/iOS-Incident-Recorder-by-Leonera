@@ -31,8 +31,25 @@ struct MainCameraView: View {
                     .transition(.opacity)
                     .zIndex(10)
             }
+
+            if model.showGestureTutorial {
+                GestureTutorialView(startsRecording: model.phase != .recording) {
+                    model.dismissGestureTutorial()
+                }
+                .transition(.opacity)
+                .zIndex(20)
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: model.isLocked)
+        .animation(.easeInOut(duration: 0.4), value: model.showGestureTutorial)
+        // Al abrir con el widget «IR» se cierra lo que estuviera encima (ajustes, video…)
+        // para que la animación del gesto y la pantalla negra queden a la vista.
+        .onChange(of: model.showGestureTutorial) { _, showing in
+            if showing { dismissPresentedViews() }
+        }
+        .onChange(of: model.isLocked) { _, locked in
+            if locked { dismissPresentedViews() }
+        }
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environment(model)
@@ -67,6 +84,13 @@ struct MainCameraView: View {
         .onAppear {
             model.startCameraIfPossible()
         }
+    }
+
+    private func dismissPresentedViews() {
+        showSettings = false
+        showIncidents = false
+        playerIncident = nil
+        confirmFinish = false
     }
 
     // MARK: - Partes

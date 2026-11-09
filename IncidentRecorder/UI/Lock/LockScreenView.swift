@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Pantalla completamente negra durante la grabación. No muestra nada más: solo
-/// escucha toques en las esquinas para reconocer el gesto de desbloqueo.
+/// escucha toques en las esquinas para reconocer el gesto de desbloqueo. La animación
+/// del gesto se dibuja encima desde `MainCameraView`.
 struct LockScreenView: View {
     @Environment(AppModel.self) private var model
 
@@ -16,15 +17,6 @@ struct LockScreenView: View {
                 )
         }
         .ignoresSafeArea()
-        .overlay {
-            if model.showGestureTutorial {
-                GestureTutorialView {
-                    model.dismissGestureTutorial()
-                }
-                .transition(.opacity)
-            }
-        }
-        .animation(.easeInOut(duration: 0.4), value: model.showGestureTutorial)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .defersSystemGestures(on: .all)
