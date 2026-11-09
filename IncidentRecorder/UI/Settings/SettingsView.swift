@@ -82,6 +82,14 @@ struct SettingsView: View {
                     Text("Mientras grabas, la pantalla queda negra. Para volver a la app toca las 4 esquinas empezando abajo a la izquierda y en sentido horario: abajo-izquierda, arriba-izquierda, arriba-derecha y abajo-derecha.")
                 }
 
+                Section {
+                    Label("Widget «IR»", systemImage: "lock.rectangle.on.rectangle")
+                } header: {
+                    Text("Pantalla de bloqueo")
+                } footer: {
+                    Text("Mantén presionada la pantalla de bloqueo, toca Personalizar › Pantalla de bloqueo, toca la zona de widgets y elige «IR». Al tocar el widget se abre la app (aunque esté cerrada) con la animación del gesto, y la grabación empieza al pulsar «Entendido».")
+                }
+
                 Section("Acerca de") {
                     LabeledContent("Versión", value: "\(AppConfig.version) (\(AppConfig.buildNumber))")
                     LabeledContent("Build", value: AppConfig.buildTag)

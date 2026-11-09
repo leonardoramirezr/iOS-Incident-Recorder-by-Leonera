@@ -10,6 +10,10 @@ struct IncidentRecorderApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
+                .onOpenURL { url in
+                    // Widget «IR» de la pantalla de bloqueo (también en arranque en frío).
+                    model.handleOpenURL(url)
+                }
                 .onChange(of: scenePhase) { _, newPhase in
                     model.scenePhaseChanged(newPhase)
                 }

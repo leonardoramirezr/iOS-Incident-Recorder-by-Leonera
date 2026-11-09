@@ -7,7 +7,8 @@ internet.
 
 - Nombre visible: **Incident Recorder by Leonera**
 - Bundle ID: `com.leonardoramirezr.incidentrecorderbyleonera`
-  (extensión de pantalla negra: `com.leonardoramirezr.incidentrecorderbyleonera.ShieldConfiguration`)
+  (widget «IR»: `com.leonardoramirezr.incidentrecorderbyleonera.IRWidget`; extensión de pantalla
+  negra: `com.leonardoramirezr.incidentrecorderbyleonera.ShieldConfiguration`)
 - iOS 17 o posterior. La grabación con dos cámaras necesita un iPhone XS/XR o más nuevo;
   en modelos sin multicámara se graba solo con la trasera.
 
@@ -39,6 +40,16 @@ internet.
    puedes **ver el video completo reconstruido** a partir de los bloques del teléfono,
    reanudar o finalizar la incidencia. Desde *Incidencias* puedes volver a verlas,
    exportarlas y ver el estado de subida de cada bloque.
+6. **Widget «IR» de la pantalla de bloqueo.** Un botón circular que dice **IR**. Al tocarlo
+   iOS abre la app (estuviera en segundo plano o cerrada) y se muestra la animación del gesto;
+   al pulsar **Entendido** empieza la grabación y la pantalla pasa a negro. Si ya se estaba
+   grabando, la animación aparece sobre la pantalla negra y «Entendido» solo la oculta; si
+   había una incidencia en pausa, la grabación la continúa.
+   - Para agregarlo: mantén presionada la pantalla de bloqueo › *Personalizar* ›
+     *Pantalla de bloqueo* › toca la zona de widgets › *Incident Recorder by Leonera* › **IR**.
+   - Con el iPhone bloqueado, iOS pide Face ID / código antes de abrir la app.
+   - El widget abre la app con el enlace `irleonera://grabar` (`Shared/QuickRecordLink.swift`);
+     no usa App Groups ni otras capacidades.
 
 En Google Drive se crea `Incident Recorder by Leonera/Incidente <fecha>/` con
 `bloque-0001_<fecha>.mov`, `bloque-0002_…` y `ubicaciones.csv` (recorrido del incidente).
@@ -139,7 +150,8 @@ El workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) corre e
 1. Valida la clave con la API de App Store Connect y que haya al menos un iPhone registrado
    (`scripts/asc.py`, solo biblioteca estándar + `openssl` para el JWT ES256).
 2. Genera el proyecto con XcodeGen y hace `xcodebuild archive` con firma automática
-   (`-allowProvisioningUpdates` y la clave de API): Xcode registra los App IDs y crea los perfiles.
+   (`-allowProvisioningUpdates` y la clave de API): Xcode registra los App IDs (app, widget y,
+   con Family Controls, la extensión de pantalla negra) y crea los perfiles.
 3. Exporta con `method=release-testing` (Ad Hoc, certificado de distribución gestionado en
    la nube) y verifica que cada bundle lleve un `embedded.mobileprovision` Ad Hoc, mostrando
    cuántos dispositivos incluye.
@@ -201,6 +213,8 @@ IncidentRecorder/
   Drive/        OAuth de Google, API de Drive, cola de subidas reanudables y sesión en segundo plano
   ScreenTime/   Permiso de Tiempo en pantalla y bloqueo de apps
   UI/           Onboarding, cámara, pantalla negra y gesto, incidencias, ajustes
+IRWidget/                                  Widget «IR» de la pantalla de bloqueo (WidgetKit)
+Shared/                                    Código compartido por la app y el widget (enlace «IR»)
 ShieldConfiguration/                       Extensión que pinta de negro las apps bloqueadas
 scripts/                                   asc.py, publish-pages.sh, verify-adhoc.sh, …
 ```

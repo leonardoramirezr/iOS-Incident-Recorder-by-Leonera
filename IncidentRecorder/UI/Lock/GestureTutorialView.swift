@@ -2,8 +2,10 @@ import SwiftUI
 
 /// Animación que explica el gesto de desbloqueo: tocar las 4 esquinas empezando
 /// abajo a la izquierda y en sentido horario. Se muestra cada vez que empieza
-/// una grabación.
+/// una grabación y al abrir la app con el widget «IR» de la pantalla de bloqueo.
 struct GestureTutorialView: View {
+    /// `true` si la grabación aún no empieza: empieza al pulsar "Entendido".
+    var startsRecording = false
     var onDismiss: () -> Void
 
     @State private var startDate = Date()
@@ -12,11 +14,13 @@ struct GestureTutorialView: View {
         ZStack {
             Color.black.opacity(0.94).ignoresSafeArea()
             VStack(spacing: 22) {
-                Label("Grabando", systemImage: "record.circle")
+                Label(startsRecording ? "Listo para grabar" : "Grabando", systemImage: "record.circle")
                     .font(.headline)
                     .foregroundStyle(.red)
 
-                Text("La pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:")
+                Text(startsRecording
+                     ? "Al pulsar «Entendido» empieza la grabación y la pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:"
+                     : "La pantalla se verá apagada. Para volver a la app toca las 4 esquinas en este orden:")
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white)
