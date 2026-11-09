@@ -1,0 +1,17 @@
+{
+  "tag": "build-13-87193a5",
+  "kind": "prerelease",
+  "version": "0.4.0",
+  "build_number": "13",
+  "branch": "claude/upbeat-cannon-2m7hnf",
+  "commit": "87193a5388d887b9b3f8f566741e755cbab87b5a",
+  "run_number": 13,
+  "run_url": "https://github.com/leonardoramirezr/iOS-Incident-Recorder-by-Leonera/actions/runs/42524439991",
+  "devices": 2,
+  "bundle_id": "com.leonardoramirezr.incidentrecorderbyleonera",
+  "published_at": "2026-11-08T21:18:36+00:00",
+  "ipa": "IncidentRecorder.ipa",
+  "page_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-13-87193a5/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-13-87193a5/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-Incident-Recorder-by-Leonera%2Fbuild-13-87193a5%2Fmanifest.plist"
+}

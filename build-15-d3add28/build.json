@@ -1,0 +1,17 @@
+{
+  "tag": "build-15-d3add28",
+  "kind": "prerelease",
+  "version": "0.4.0",
+  "build_number": "15",
+  "branch": "claude/happy-cori-kmi9t1",
+  "commit": "d3add280c83a87a22147464a96cc676f35eb684f",
+  "run_number": 15,
+  "run_url": "https://github.com/leonardoramirezr/iOS-Incident-Recorder-by-Leonera/actions/runs/42553992786",
+  "devices": 2,
+  "bundle_id": "com.leonardoramirezr.incidentrecorderbyleonera",
+  "published_at": "2026-11-09T03:02:24+00:00",
+  "ipa": "IncidentRecorder.ipa",
+  "page_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-15-d3add28/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-15-d3add28/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-Incident-Recorder-by-Leonera%2Fbuild-15-d3add28%2Fmanifest.plist"
+}

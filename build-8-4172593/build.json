@@ -1,0 +1,17 @@
+{
+  "tag": "build-8-4172593",
+  "kind": "prerelease",
+  "version": "0.2.0",
+  "build_number": "8",
+  "branch": "claude/kind-faraday-qrpukz",
+  "commit": "41725933ae2a2c4a0f467c282b4329a4bd08127f",
+  "run_number": 8,
+  "run_url": "https://github.com/leonardoramirezr/iOS-Incident-Recorder-by-Leonera/actions/runs/39067920755",
+  "devices": 1,
+  "bundle_id": "com.leonardoramirezr.incidentrecorderbyleonera",
+  "published_at": "2026-10-17T20:44:50+00:00",
+  "ipa": "IncidentRecorder.ipa",
+  "page_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-8-4172593/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-Incident-Recorder-by-Leonera/build-8-4172593/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-Incident-Recorder-by-Leonera%2Fbuild-8-4172593%2Fmanifest.plist"
+}
