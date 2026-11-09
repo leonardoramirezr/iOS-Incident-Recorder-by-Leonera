@@ -184,12 +184,30 @@ final class AppModel {
     /// Muestra la animación del gesto; la grabación empieza al pulsar "Entendido".
     func handleOpenURL(_ url: URL) {
         guard url.scheme == "incidentrecorder", url.host == "ir" else { return }
-        guard hasCompletedOnboarding, phase != .recording else { return }
+        guard hasCompletedOnboarding else { return }
         guard cameraAccess == .authorized else {
             alertMessage = "Permite el acceso a la cámara en Ajustes para grabar."
             return
         }
-        showStartTutorial = true
+        if phase == .recording {
+            // Ya se graba (p. ej. la app estaba en segundo plano con la pantalla negra):
+            // solo se muestra la animación y "Entendido" vuelve a la pantalla negra.
+            showGestureAnimation()
+        } else {
+            showStartTutorial = true
+        }
+    }
+
+    /// Muestra la animación del gesto durante una grabación que ya está en curso.
+    private func showGestureAnimation() {
+        if isLocked {
+            // La pantalla negra tapa todo: se restaura el brillo para poder leer la animación.
+            // "Entendido" (`dismissGestureTutorial`) la vuelve a oscurecer.
+            showGestureTutorial = true
+            restoreBrightness()
+        } else {
+            lock(showTutorial: true)
+        }
     }
 
     /// "Entendido" en el tutorial previo: empieza la grabación. El gesto ya se mostró,

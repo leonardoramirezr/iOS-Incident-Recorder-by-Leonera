@@ -44,7 +44,8 @@ internet.
    *Personalizar* y agrega el widget **Grabar incidencia** (círculo con «IR»). Al tocarlo abre
    la app y muestra la animación del gesto de desbloqueo; al pulsar **Entendido** empieza la
    grabación (la pantalla queda negra). La X de esa pantalla cancela sin grabar. Requiere la app
-   ya configurada y el permiso de cámara concedido; si hay una grabación en curso, no hace nada.
+   ya configurada y el permiso de cámara concedido. Si la grabación ya está en curso, el widget
+   solo muestra la animación y **Entendido** vuelve a la pantalla negra, sin detener la grabación.
 
 En Google Drive se crea `Incident Recorder by Leonera/Incidente <fecha>/` con
 `bloque-0001_<fecha>.mov`, `bloque-0002_…` y `ubicaciones.csv` (recorrido del incidente).
